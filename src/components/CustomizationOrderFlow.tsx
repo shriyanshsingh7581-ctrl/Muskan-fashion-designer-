@@ -11,6 +11,7 @@ import {
 import { translations } from '../data/translations';
 import { api } from '../services/api';
 import { generateWhatsAppOrderUrl } from '../utils/whatsapp';
+import { uploadToCloudinary } from '../utils/cloudinary';
 import {
   Scissors,
   CheckCircle2,
@@ -23,6 +24,7 @@ import {
   RotateCcw,
   PackageCheck,
   Sparkles,
+  Cloud,
 } from 'lucide-react';
 
 interface CustomizationOrderFlowProps {
@@ -83,6 +85,8 @@ export const CustomizationOrderFlow: React.FC<CustomizationOrderFlowProps> = ({
   const [additionalInstructions, setAdditionalInstructions] = useState('');
   const [referenceImageBase64, setReferenceImageBase64] = useState<string>('');
   const [referenceFileName, setReferenceFileName] = useState<string>('');
+  const [uploadedCloudinaryUrl, setUploadedCloudinaryUrl] = useState<string>('');
+  const [isUploadingRefImage, setIsUploadingRefImage] = useState(false);
 
   // UI / Submission state
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -90,30 +94,43 @@ export const CustomizationOrderFlow: React.FC<CustomizationOrderFlowProps> = ({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
 
-  // Handle Image Upload
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Image Upload with Cloudinary Support
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       setErrors((prev) => ({
         ...prev,
-        referenceImage: 'फ़ाइल का साइज़ 5MB से कम होना चाहिए (Max 5MB)',
+        referenceImage: 'फ़ाइल का साइज़ 10MB से कम होना चाहिए (Max 10MB)',
       }));
       return;
     }
 
+    setReferenceFileName(file.name);
+    setErrors((prev) => {
+      const copy = { ...prev };
+      delete copy.referenceImage;
+      return copy;
+    });
+
+    // Instant local preview
     const reader = new FileReader();
     reader.onload = () => {
       setReferenceImageBase64(reader.result as string);
-      setReferenceFileName(file.name);
-      setErrors((prev) => {
-        const copy = { ...prev };
-        delete copy.referenceImage;
-        return copy;
-      });
     };
     reader.readAsDataURL(file);
+
+    // Upload to Cloudinary in background
+    setIsUploadingRefImage(true);
+    try {
+      const res = await uploadToCloudinary(file);
+      setUploadedCloudinaryUrl(res.secure_url);
+    } catch (err) {
+      console.warn('Cloudinary ref image upload fallback to local base64:', err);
+    } finally {
+      setIsUploadingRefImage(false);
+    }
   };
 
   // Validation functions
@@ -201,7 +218,7 @@ export const CustomizationOrderFlow: React.FC<CustomizationOrderFlowProps> = ({
       city: city.trim(),
       pinCode: pinCode.trim(),
       additionalInstructions: additionalInstructions.trim(),
-      referenceImageUrl: referenceImageBase64 || undefined,
+      referenceImageUrl: uploadedCloudinaryUrl || referenceImageBase64 || undefined,
       pricePerItem: selectedDesign.price || null,
       totalAmount: selectedDesign.price ? selectedDesign.price * quantity : null,
     };
@@ -827,19 +844,39 @@ export const CustomizationOrderFlow: React.FC<CustomizationOrderFlowProps> = ({
                   </label>
 
                   {referenceFileName && (
-                    <span className="text-xs text-[#2C1810] truncate max-w-48 font-medium">
-                      ✓ {referenceFileName}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs text-[#2C1810] truncate max-w-48 font-medium">
+                        ✓ {referenceFileName}
+                      </span>
+                      {isUploadingRefImage && (
+                        <span className="text-[10px] text-[#80182A] animate-pulse font-medium">
+                          (Cloudinary पर अपलोड हो रहा है...)
+                        </span>
+                      )}
+                      {uploadedCloudinaryUrl && (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-flex items-center gap-1">
+                          <Cloud className="w-2.5 h-2.5" />
+                          Cloudinary सुरक्षित
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
 
                 {referenceImageBase64 && (
-                  <div className="mt-2 w-20 h-20 rounded-lg overflow-hidden border border-[#D4AF37]">
-                    <img
-                      src={referenceImageBase64}
-                      alt="Reference Upload"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="mt-2 flex items-center gap-3">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden border border-[#D4AF37] shrink-0 bg-white shadow-xs">
+                      <img
+                        src={referenceImageBase64}
+                        alt="Reference Upload"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {uploadedCloudinaryUrl && (
+                      <span className="text-[11px] text-emerald-800 font-medium">
+                        ✓ बुटीक को उच्च गुणवत्ता वाली Cloudinary फ़ोटो प्राप्त होगी!
+                      </span>
+                    )}
                   </div>
                 )}
                 {errors.referenceImage && (

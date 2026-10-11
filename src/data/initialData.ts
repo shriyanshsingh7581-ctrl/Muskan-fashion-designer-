@@ -291,4 +291,6 @@ export const DEFAULT_SETTINGS: AdminSettings = {
   standardStitchingDays: 5,
   deliveryPolicyNoteHindi: 'होम डिलीवरी उपलब्धता, डिलीवरी शुल्क व समय आपके पते व पिन कोड के अनुसार बुटीक द्वारा कन्फर्म किया जाएगा।',
   deliveryPolicyNoteEnglish: 'Home delivery availability, delivery charges and estimated timeline will be confirmed by the boutique based on your PIN code.',
+  cloudinaryCloudName: 'dxeuzdwkz',
+  cloudinaryUploadPreset: 'Muskaan fashion designer',
 };

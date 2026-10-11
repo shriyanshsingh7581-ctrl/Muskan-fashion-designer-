@@ -124,4 +124,6 @@ export interface AdminSettings {
   standardStitchingDays: number;
   deliveryPolicyNoteHindi: string;
   deliveryPolicyNoteEnglish: string;
+  cloudinaryCloudName?: string;
+  cloudinaryUploadPreset?: string;
 }

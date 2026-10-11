@@ -19,7 +19,18 @@ import {
   TrendingUp,
   Settings as SettingsIcon,
   SlidersHorizontal,
+  Upload,
+  Tag,
+  Cloud,
+  Check,
+  Sparkles,
+  ExternalLink,
 } from 'lucide-react';
+import {
+  uploadToCloudinary,
+  testCloudinaryConnection,
+  DEFAULT_CLOUDINARY_CONFIG,
+} from '../utils/cloudinary';
 
 interface AdminDashboardModalProps {
   onClose: () => void;
@@ -94,6 +105,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [designs, setDesigns] = useState<BlouseDesign[]>([]);
   const [editingDesign, setEditingDesign] = useState<Partial<BlouseDesign> | null>(null);
   const [isCreatingNewDesign, setIsCreatingNewDesign] = useState(false);
+  const [quickPriceModalDesign, setQuickPriceModalDesign] = useState<BlouseDesign | null>(null);
+  const [quickPriceValue, setQuickPriceValue] = useState<string>('');
 
   // Settings State
   const [settings, setSettings] = useState<AdminSettings | null>(null);
@@ -101,6 +114,31 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [noticeHindi, setNoticeHindi] = useState('');
   const [noticeEnglish, setNoticeEnglish] = useState('');
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+
+  // Cloudinary State (Configured with User's Cloud Name & Preset)
+  const [cloudinaryCloudName, setCloudinaryCloudName] = useState<string>(
+    DEFAULT_CLOUDINARY_CONFIG.cloudName
+  );
+  const [cloudinaryUploadPreset, setCloudinaryUploadPreset] = useState<string>(
+    DEFAULT_CLOUDINARY_CONFIG.uploadPreset
+  );
+  const [isUploadingToCloudinary, setIsUploadingToCloudinary] = useState(false);
+  const [cloudinaryUploadPercent, setCloudinaryUploadPercent] = useState<number>(0);
+  const [cloudinaryTestResult, setCloudinaryTestResult] = useState<{
+    testing: boolean;
+    message?: string;
+    isError?: boolean;
+    sampleUrl?: string;
+  } | null>(null);
+
+  // Quick Catalogue Direct Upload State
+  const [showQuickCatalogueBox, setShowQuickCatalogueBox] = useState(false);
+  const [quickCatImage, setQuickCatImage] = useState<string>('');
+  const [quickCatNameHi, setQuickCatNameHi] = useState<string>('');
+  const [quickCatNameEn, setQuickCatNameEn] = useState<string>('');
+  const [quickCatPrice, setQuickCatPrice] = useState<number>(350);
+  const [quickCatCategory, setQuickCatCategory] = useState<string>('designer');
+  const [quickCatDescription, setQuickCatDescription] = useState<string>('');
 
   // Handle Login
   const handleLogin = async (e: React.FormEvent) => {
@@ -129,6 +167,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       setNavratriBannerActive(fetchedSettings.navratriBannerActive);
       setNoticeHindi(fetchedSettings.noticeHindi);
       setNoticeEnglish(fetchedSettings.noticeEnglish);
+      if (fetchedSettings.cloudinaryCloudName) {
+        setCloudinaryCloudName(fetchedSettings.cloudinaryCloudName);
+      }
+      if (fetchedSettings.cloudinaryUploadPreset) {
+        setCloudinaryUploadPreset(fetchedSettings.cloudinaryUploadPreset);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -338,6 +382,194 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
+  // Upload Photo for Catalogue / Design using Cloudinary
+  const handleDesignImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      alert('फ़ाइल का साइज़ 15MB से कम होना चाहिए (Max 15MB file size)');
+      return;
+    }
+
+    // Set immediate local preview
+    const localUrl = URL.createObjectURL(file);
+    setEditingDesign((prev) => ({
+      ...prev,
+      image: localUrl,
+    }));
+
+    setIsUploadingToCloudinary(true);
+    setCloudinaryUploadPercent(0);
+
+    try {
+      const res = await uploadToCloudinary(file, {
+        cloudName: cloudinaryCloudName,
+        uploadPreset: cloudinaryUploadPreset,
+        onProgress: (pct) => setCloudinaryUploadPercent(pct),
+      });
+
+      setEditingDesign((prev) => ({
+        ...prev,
+        image: res.secure_url,
+      }));
+      setSaveSuccessMsg('✓ फोटो Cloudinary पर सुरक्षित अपलोड हो गई!');
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+    } catch (err: any) {
+      console.error('Cloudinary upload error:', err);
+      // Fallback to local base64
+      const reader = new FileReader();
+      reader.onload = () => {
+        setEditingDesign((prev) => ({
+          ...prev,
+          image: reader.result as string,
+        }));
+      };
+      reader.readAsDataURL(file);
+      alert('Cloudinary अपलोड संदेश: ' + err.message + ' (लोकल फ़ोटो सुरक्षित रखी गई)');
+    } finally {
+      setIsUploadingToCloudinary(false);
+      setCloudinaryUploadPercent(0);
+    }
+  };
+
+  // Quick Catalogue Direct Cloudinary Upload
+  const handleQuickCatalogueUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const localUrl = URL.createObjectURL(file);
+    setQuickCatImage(localUrl);
+    setIsUploadingToCloudinary(true);
+    setCloudinaryUploadPercent(0);
+
+    try {
+      const res = await uploadToCloudinary(file, {
+        cloudName: cloudinaryCloudName,
+        uploadPreset: cloudinaryUploadPreset,
+        onProgress: (pct) => setCloudinaryUploadPercent(pct),
+      });
+
+      setQuickCatImage(res.secure_url);
+      setSaveSuccessMsg('✓ कैटलॉग फोटो Cloudinary पर सुरक्षित अपलोड हो गई!');
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+    } catch (err: any) {
+      console.error('Cloudinary upload error:', err);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setQuickCatImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      alert('Cloudinary अपलोड संदेश: ' + err.message);
+    } finally {
+      setIsUploadingToCloudinary(false);
+      setCloudinaryUploadPercent(0);
+    }
+  };
+
+  // Save Quick Catalogue to Website
+  const handleSaveQuickCatalogue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickCatImage) {
+      alert('कृपया पहले कैटलॉग की फोटो चुनें');
+      return;
+    }
+    if (!quickCatNameHi.trim()) {
+      alert('कृपया डिज़ाइन का नाम दर्ज करें');
+      return;
+    }
+
+    const nextIdx = designs.length + 1;
+    const code = `MFD-CAT-${nextIdx.toString().padStart(2, '0')}`;
+    const newDesign: Partial<BlouseDesign> = {
+      code,
+      nameHi: quickCatNameHi.trim(),
+      nameEn: quickCatNameEn.trim() || quickCatNameHi.trim(),
+      categoryId: quickCatCategory as any,
+      price: Number(quickCatPrice) || 350,
+      image: quickCatImage,
+      descriptionHi:
+        quickCatDescription.trim() ||
+        `${quickCatNameHi.trim()} - मुस्कान फैशन डिज़ाइनर का नवीनतम कैटलॉग। उत्तम सिलाई व फिनिशिंग।`,
+      descriptionEn:
+        quickCatNameEn.trim() ||
+        'Premium bespoke boutique blouse handcrafted to your exact fit.',
+      neckTypeHi: 'पसंदीदा डिज़ाइन अनुसार',
+      neckTypeEn: 'Custom Neckline',
+      sleeveTypeHi: 'पसंदीदा आस्तीन अनुसार',
+      sleeveTypeEn: 'Custom Sleeve Style',
+      fabricRecommendationHi: 'सिल्क / ब्रोकेड / वेलवेट',
+      fabricRecommendationEn: 'Silk / Brocade / Velvet',
+      estimatedStitchingDays: 5,
+    };
+
+    try {
+      await api.createDesign(newDesign);
+      const updated = await api.getDesigns();
+      setDesigns(updated);
+      onDesignsUpdated();
+      setSaveSuccessMsg(`नया कैटलॉग ${code} सफलतापूर्वक वेबसाइट पर जुड़ गया!`);
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+
+      // Reset
+      setQuickCatImage('');
+      setQuickCatNameHi('');
+      setQuickCatNameEn('');
+      setQuickCatPrice(350);
+      setQuickCatDescription('');
+      setShowQuickCatalogueBox(false);
+    } catch (err: any) {
+      alert('कैटलॉग सेव करने में त्रुटि: ' + err.message);
+    }
+  };
+
+  // Inline Quick Price Change (1-Click for Boutique Owner)
+  const handleQuickInlinePrice = async (design: BlouseDesign, newPrice: number) => {
+    try {
+      await api.updateDesign(design.id, { price: newPrice });
+      const updated = await api.getDesigns();
+      setDesigns(updated);
+      onDesignsUpdated();
+      setSaveSuccessMsg(`डिज़ाइन ${design.code} की कीमत ₹${newPrice} कर दी गई!`);
+      setTimeout(() => setSaveSuccessMsg(''), 3000);
+    } catch (err: any) {
+      alert('कीमत बदलने में समस्या: ' + err.message);
+    }
+  };
+
+  // Test Cloudinary Connection
+  const handleTestCloudinary = async () => {
+    setCloudinaryTestResult({ testing: true });
+    const res = await testCloudinaryConnection(cloudinaryCloudName, cloudinaryUploadPreset);
+    setCloudinaryTestResult({
+      testing: false,
+      message: res.message,
+      isError: !res.success,
+      sampleUrl: res.sampleUrl,
+    });
+  };
+
+  // Quick Price Save Modal
+  const handleQuickPriceSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickPriceModalDesign) return;
+
+    const newP = quickPriceValue ? Number(quickPriceValue) : null;
+    try {
+      await api.updateDesign(quickPriceModalDesign.id, { price: newP });
+      const updated = await api.getDesigns();
+      setDesigns(updated);
+      onDesignsUpdated();
+      setSaveSuccessMsg(
+        `डिज़ाइन ${quickPriceModalDesign.code} की कीमत ₹${newP || 'संपर्क पर'} अपडेट हो गई!`
+      );
+      setTimeout(() => setSaveSuccessMsg(''), 3500);
+      setQuickPriceModalDesign(null);
+    } catch (err: any) {
+      alert('कीमत बदलने में समस्या: ' + err.message);
+    }
+  };
+
   // Save Design (New or Edit)
   const handleSaveDesign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,6 +586,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       const updated = await api.getDesigns();
       setDesigns(updated);
       onDesignsUpdated();
+      setSaveSuccessMsg('डिज़ाइन सफलतापूर्वक सहेजा गया!');
+      setTimeout(() => setSaveSuccessMsg(''), 3500);
     } catch (err: any) {
       alert('डिज़ाइन सेव करने में त्रुटि: ' + err.message);
     }
@@ -379,9 +613,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         navratriBannerActive,
         noticeHindi,
         noticeEnglish,
+        cloudinaryCloudName: cloudinaryCloudName.trim(),
+        cloudinaryUploadPreset: cloudinaryUploadPreset.trim(),
       });
-      setSaveSuccessMsg('सेटिंग्स सफलतापूर्वक सेव हो गईं!');
-      setTimeout(() => setSaveSuccessMsg(''), 3000);
+      setSaveSuccessMsg('सेटिंग्स एवं Cloudinary कॉन्फ़िगरेशन सफलतापूर्वक सेव हो गईं!');
+      setTimeout(() => setSaveSuccessMsg(''), 3500);
     } catch (e: any) {
       alert('सेटिंग्स सेव करने में समस्या: ' + e.message);
     }
@@ -995,43 +1231,262 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               {activeTab === 'designs' && (
                 <div className="space-y-6">
                   
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-base font-serif font-bold text-[#4A0A19]">
-                        ब्लाउज़ डिज़ाइन कैटलॉग
-                      </h3>
-                      <p className="text-xs text-[#705E54]">
-                        नए डिज़ाइन जोड़ें, फोटो अपडेट करें या सिलाई शुल्क निर्धारित करें
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-serif font-bold text-[#4A0A19]">
+                          ब्लाउज़ डिज़ाइन कैटलॉग
+                        </h3>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF1E3] text-[#80182A] border border-[#DFC99D] flex items-center gap-1">
+                          <Cloud className="w-3 h-3 text-[#B38F2B]" />
+                          Cloudinary पावर्ड ({designs.length})
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#705E54] mt-0.5">
+                        कैटलॉग फोटो अपलोड करें, कीमत (₹200-₹400) बदलें और वेबसाइट पर तुरंत लाइव करें
                       </p>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        setIsCreatingNewDesign(true);
-                        setEditingDesign({
-                          code: `MFD-DS-${(designs.length + 1).toString().padStart(2, '0')}`,
-                          nameHi: '',
-                          nameEn: '',
-                          categoryId: 'designer',
-                          price: 350,
-                          image: '/src/assets/images/hero_blouse_craft_1791701468425.jpg',
-                          descriptionHi: '',
-                          descriptionEn: '',
-                          neckTypeHi: 'स्वीटहार्ट नेक',
-                          neckTypeEn: 'Sweetheart Neck',
-                          sleeveTypeHi: 'एल्बो लेंथ',
-                          sleeveTypeEn: 'Elbow Length',
-                          fabricRecommendationHi: 'सिल्क / वेलवेट',
-                          fabricRecommendationEn: 'Silk / Velvet',
-                          estimatedStitchingDays: 5,
-                        });
-                      }}
-                      className="px-4 py-2 bg-[#80182A] hover:bg-[#9B111E] text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-xs transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>नया डिज़ाइन जोड़ें</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setShowQuickCatalogueBox((prev) => !prev)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors ${
+                          showQuickCatalogueBox
+                            ? 'bg-[#4A0A19] text-white ring-2 ring-[#D4AF37]'
+                            : 'bg-gradient-to-r from-[#D4AF37] to-[#B38F2B] text-black hover:brightness-105'
+                        }`}
+                      >
+                        <Cloud className="w-4 h-4 text-white" />
+                        <span className="text-white font-bold">⚡ Cloudinary कैटलॉग अपलोड</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsCreatingNewDesign(true);
+                          setEditingDesign({
+                            code: `MFD-DS-${(designs.length + 1).toString().padStart(2, '0')}`,
+                            nameHi: '',
+                            nameEn: '',
+                            categoryId: 'designer',
+                            price: 350,
+                            image: '/src/assets/images/hero_blouse_craft_1791701468425.jpg',
+                            descriptionHi: '',
+                            descriptionEn: '',
+                            neckTypeHi: 'स्वीटहार्ट नेक',
+                            neckTypeEn: 'Sweetheart Neck',
+                            sleeveTypeHi: 'एल्बो लेंथ',
+                            sleeveTypeEn: 'Elbow Length',
+                            fabricRecommendationHi: 'सिल्क / वेलवेट',
+                            fabricRecommendationEn: 'Silk / Velvet',
+                            estimatedStitchingDays: 5,
+                          });
+                        }}
+                        className="px-3.5 py-2 bg-[#80182A] hover:bg-[#9B111E] text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-xs transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>+ पूरा फॉर्म</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* QUICK CLOUDINARY CATALOGUE UPLOADER CARD */}
+                  {showQuickCatalogueBox && (
+                    <div className="bg-gradient-to-br from-[#FFFDF9] to-[#FAF4E8] p-5 sm:p-6 rounded-3xl border-2 border-[#D4AF37] space-y-4 shadow-lg">
+                      <div className="flex items-center justify-between pb-3 border-b border-[#EADBBE]">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 bg-[#80182A] text-white rounded-xl shadow-xs">
+                            <Cloud className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-serif font-bold text-base text-[#4A0A19]">
+                              झटपट कैटलॉग अपलोड (Cloudinary Direct Uploader)
+                            </h4>
+                            <p className="text-[11px] text-[#705E54]">
+                              Cloud Name: <span className="font-mono font-bold text-[#80182A]">{cloudinaryCloudName}</span> · Preset: <span className="font-bold text-[#80182A]">{cloudinaryUploadPreset}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowQuickCatalogueBox(false)}
+                          className="text-xs text-[#705E54] hover:text-[#4A0A19] px-2 py-1 bg-white rounded-lg border border-[#D9CEB5]"
+                        >
+                          ✕ बंद करें
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleSaveQuickCatalogue} className="space-y-4">
+                        {/* File Upload Zone */}
+                        <div className="border-2 border-dashed border-[#D4AF37] rounded-2xl p-4 sm:p-6 bg-white text-center space-y-3">
+                          {quickCatImage ? (
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                              <div className="w-28 h-28 rounded-2xl overflow-hidden border-2 border-[#D4AF37] shadow-md shrink-0 bg-black/5">
+                                <img
+                                  src={quickCatImage}
+                                  alt="Uploaded Preview"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="text-left space-y-1.5 max-w-md">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">
+                                  <Check className="w-3 h-3 text-emerald-700" />
+                                  Cloudinary पर फ़ोटो तैयार है!
+                                </span>
+                                <div className="text-xs font-mono text-[#5A4A42] truncate max-w-sm">
+                                  {quickCatImage}
+                                </div>
+                                <label className="inline-block cursor-pointer text-xs text-[#80182A] font-semibold underline hover:text-[#4A0A19]">
+                                  दूसरी फोटो चुनें (Change Photo)
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleQuickCatalogueUpload}
+                                    className="hidden"
+                                    disabled={isUploadingToCloudinary}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <label className="cursor-pointer inline-flex flex-col items-center justify-center p-4 bg-[#FAF5EB] hover:bg-[#F2E8D5] border border-[#DFC99D] rounded-2xl transition-colors group">
+                                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-xs text-[#80182A] group-hover:scale-105 transition-transform">
+                                  <Upload className="w-6 h-6" />
+                                </div>
+                                <span className="text-xs font-bold text-[#4A0A19] mt-2">
+                                  ब्लाउज़ कैटलॉग फोटो चुनें (Select Blouse Photo)
+                                </span>
+                                <span className="text-[10px] text-[#705E54]">
+                                  कैमरा, मोबाइल गैलरी या कंप्यूटर से सीधे Cloudinary में अपलोड करें
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleQuickCatalogueUpload}
+                                  className="hidden"
+                                  disabled={isUploadingToCloudinary}
+                                />
+                              </label>
+
+                              {isUploadingToCloudinary && (
+                                <div className="max-w-xs mx-auto space-y-1">
+                                  <div className="flex items-center justify-between text-xs text-[#80182A] font-bold">
+                                    <span>Cloudinary पर अपलोड हो रहा है...</span>
+                                    <span>{cloudinaryUploadPercent}%</span>
+                                  </div>
+                                  <div className="w-full bg-[#EADBBE] h-2 rounded-full overflow-hidden">
+                                    <div
+                                      className="bg-[#80182A] h-full transition-all duration-300"
+                                      style={{ width: `${cloudinaryUploadPercent}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Catalogue Fields */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">
+                              डिज़ाइन / कैटलॉग का नाम *
+                            </label>
+                            <input
+                              type="text"
+                              value={quickCatNameHi}
+                              onChange={(e) => setQuickCatNameHi(e.target.value)}
+                              placeholder="जैसे: रॉयल कुंदन जरदोजी ब्लाउज़"
+                              className="w-full p-2.5 bg-white border border-[#D9CEB5] rounded-xl outline-none focus:border-[#80182A]"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">
+                              श्रेणी (Category) *
+                            </label>
+                            <select
+                              value={quickCatCategory}
+                              onChange={(e) => setQuickCatCategory(e.target.value)}
+                              className="w-full p-2.5 bg-white border border-[#D9CEB5] rounded-xl outline-none"
+                            >
+                              {CATEGORIES.filter((c) => c.id !== 'all').map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.nameHi}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">
+                              सिलाई शुल्क (₹ Rate) *
+                            </label>
+                            <input
+                              type="number"
+                              min={100}
+                              max={2000}
+                              value={quickCatPrice}
+                              onChange={(e) => setQuickCatPrice(Number(e.target.value))}
+                              className="w-full p-2.5 bg-white border border-[#D9CEB5] rounded-xl font-mono font-bold text-sm outline-none focus:border-[#80182A]"
+                              required
+                            />
+                            {/* Quick Price Buttons */}
+                            <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                              <span className="text-[10px] text-[#705E54]">त्वरित चयन:</span>
+                              {[200, 250, 300, 350, 399, 400].map((p) => (
+                                <button
+                                  key={p}
+                                  type="button"
+                                  onClick={() => setQuickCatPrice(p)}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-mono border transition-colors ${
+                                    quickCatPrice === p
+                                      ? 'bg-[#80182A] text-white border-[#80182A]'
+                                      : 'bg-white text-[#4A0A19] border-[#DFC99D] hover:bg-[#FAF1E3]'
+                                  }`}
+                                >
+                                  ₹{p}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block font-semibold text-[#4A0A19] mb-1 text-xs">
+                            संक्षिप्त विवरण (वैकल्पिक)
+                          </label>
+                          <input
+                            type="text"
+                            value={quickCatDescription}
+                            onChange={(e) => setQuickCatDescription(e.target.value)}
+                            placeholder="जैसे: आरी वर्क, स्वीटहार्ट नेक, शुद्ध सिल्क पर विशेष कारीगरी"
+                            className="w-full p-2 bg-white border border-[#D9CEB5] rounded-xl text-xs outline-none"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-[#EADBBE]">
+                          <button
+                            type="button"
+                            onClick={() => setShowQuickCatalogueBox(false)}
+                            className="px-4 py-2 border border-[#D9CEB5] text-[#5A4A42] text-xs font-semibold rounded-xl bg-white"
+                          >
+                            रद्द करें
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={!quickCatImage || isUploadingToCloudinary}
+                            className="px-6 py-2.5 bg-[#80182A] hover:bg-[#9B111E] text-white text-xs font-bold rounded-xl shadow-md disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-[#ECC86B]" />
+                            <span>कैटलॉग में लाइव प्रकाशित करें (Publish Now)</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
 
                   {/* Add / Edit Design Modal Sub-Form */}
                   {editingDesign && (
@@ -1098,9 +1553,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         </div>
 
                         <div>
-                          <label className="block font-semibold mb-1">सिलाई शुल्क (₹) - खाली छोड़ें यदि संपर्क पर तय करना हो</label>
+                          <label className="block font-semibold mb-1">सिलाई शुल्क (₹ Price)</label>
                           <input
                             type="number"
+                            min={100}
+                            max={2000}
                             value={editingDesign.price ?? ''}
                             onChange={(e) =>
                               setEditingDesign({
@@ -1108,9 +1565,26 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                 price: e.target.value ? Number(e.target.value) : null,
                               })
                             }
-                            placeholder="उदा: 1850 (या खाली छोड़ें)"
-                            className="w-full p-2 border rounded-lg"
+                            placeholder="उदा: 350"
+                            className="w-full p-2 border rounded-lg font-mono font-bold text-sm"
                           />
+                          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                            <span className="text-[10px] text-[#705E54]">त्वरित चयन (₹200-₹400):</span>
+                            {[200, 250, 300, 350, 399, 400].map((p) => (
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => setEditingDesign({ ...editingDesign, price: p })}
+                                className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold font-mono transition-colors ${
+                                  editingDesign.price === p
+                                    ? 'bg-[#80182A] text-white border-[#80182A]'
+                                    : 'bg-[#FAF1E3] hover:bg-[#F2E8D5] text-[#80182A]'
+                                }`}
+                              >
+                                ₹{p}
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
                         <div>
@@ -1128,15 +1602,78 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                           />
                         </div>
 
-                        <div className="sm:col-span-2">
-                          <label className="block font-semibold mb-1">फोटो URL / पाथ</label>
-                          <input
-                            type="text"
-                            value={editingDesign.image || ''}
-                            onChange={(e) => setEditingDesign({ ...editingDesign, image: e.target.value })}
-                            className="w-full p-2 border rounded-lg font-mono text-[11px]"
-                            required
-                          />
+                        {/* File Upload & Live Preview */}
+                        <div className="sm:col-span-2 p-3.5 bg-[#FAF6EE] rounded-xl border border-[#E8DFC8] space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block font-bold text-[#4A0A19]">
+                              ब्लाउज़ फ़ोटो / कैटलॉग अपलोड करें (Cloudinary पावर्ड) *
+                            </label>
+                            <span className="text-[10px] font-mono font-semibold text-[#80182A] bg-white px-2 py-0.5 rounded border border-[#DFC99D] flex items-center gap-1">
+                              <Cloud className="w-3 h-3 text-[#B38F2B]" />
+                              {cloudinaryCloudName}
+                            </span>
+                          </div>
+                          
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            <label className="cursor-pointer px-4 py-2.5 bg-white hover:bg-[#FAF1E3] border-2 border-dashed border-[#D4AF37] rounded-xl text-xs font-semibold text-[#80182A] flex items-center gap-2 shadow-xs transition-colors">
+                              <Upload className="w-4 h-4 text-[#B38F2B]" />
+                              <span>कैमरा या गैलरी से फ़ोटो चुनें (Upload to Cloudinary)</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleDesignImageUpload}
+                                className="hidden"
+                                disabled={isUploadingToCloudinary}
+                              />
+                            </label>
+
+                            <span className="text-[11px] text-[#705E54]">या इमेज URL डालें:</span>
+                            <input
+                              type="text"
+                              value={editingDesign.image || ''}
+                              onChange={(e) => setEditingDesign({ ...editingDesign, image: e.target.value })}
+                              placeholder="/src/assets/images/... या https://res.cloudinary.com/..."
+                              className="flex-1 p-2 border rounded-lg font-mono text-[11px] bg-white"
+                            />
+                          </div>
+
+                          {isUploadingToCloudinary && (
+                            <div className="p-2 bg-white rounded-lg border border-[#DFC99D] space-y-1">
+                              <div className="flex items-center justify-between text-xs text-[#80182A] font-bold">
+                                <span>Cloudinary पर अपलोड हो रहा है...</span>
+                                <span>{cloudinaryUploadPercent}%</span>
+                              </div>
+                              <div className="w-full bg-[#FAF1E3] h-2 rounded-full overflow-hidden">
+                                <div
+                                  className="bg-[#80182A] h-full transition-all duration-300"
+                                  style={{ width: `${cloudinaryUploadPercent}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {editingDesign.image && (
+                            <div className="flex items-center gap-3 pt-2">
+                              <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[#D4AF37] shrink-0 bg-white shadow-xs">
+                                <img
+                                  src={editingDesign.image}
+                                  alt="Preview"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="space-y-1 min-w-0">
+                                <span className="text-xs text-emerald-700 font-semibold block">
+                                  ✓ फ़ोटो लोड हो गई है और कैटलॉग में दिखाई देगी!
+                                </span>
+                                {editingDesign.image.includes('cloudinary') && (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FAF1E3] text-[#80182A] border border-[#DFC99D] inline-flex items-center gap-1">
+                                    <Cloud className="w-3 h-3 text-[#B38F2B]" />
+                                    Cloudinary पर सुरक्षित होस्टेड
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="sm:col-span-2">
@@ -1173,84 +1710,331 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     {designs.map((d) => (
                       <div
                         key={d.id}
-                        className="bg-white p-3.5 rounded-2xl border border-[#E8DFC8] flex items-center gap-3"
+                        className="bg-white p-3.5 rounded-2xl border border-[#E8DFC8] flex flex-col justify-between shadow-xs hover:border-[#D4AF37] transition-all space-y-2.5"
                       >
-                        <img
-                          src={d.image}
-                          alt={d.nameHi}
-                          className="w-16 h-16 rounded-xl object-cover shrink-0 border border-[#D4AF37]"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-bold text-[#80182A]">{d.code}</span>
-                          <h4 className="text-xs font-bold text-[#2C1810] truncate">{d.nameHi}</h4>
-                          <span className="text-[11px] font-mono text-[#705E54]">
-                            {d.price ? `₹${d.price}` : 'मूल्य संपर्क पर'}
-                          </span>
+                        <div className="flex items-start gap-3">
+                          <div className="relative shrink-0">
+                            <img
+                              src={d.image}
+                              alt={d.nameHi}
+                              className="w-16 h-16 rounded-xl object-cover border border-[#D4AF37]"
+                              referrerPolicy="no-referrer"
+                            />
+                            {d.image.includes('cloudinary') && (
+                              <span
+                                title="Cloudinary पर होस्टेड"
+                                className="absolute -top-1.5 -right-1.5 bg-[#80182A] text-white rounded-full p-0.5 shadow-xs"
+                              >
+                                <Cloud className="w-2.5 h-2.5" />
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-[#80182A]">{d.code}</span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => {
+                                    setIsCreatingNewDesign(false);
+                                    setEditingDesign(d);
+                                  }}
+                                  className="p-1 text-[#5A4A42] hover:text-[#80182A] hover:bg-[#FAF6EE] rounded-lg"
+                                  title="एडिट करें"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteDesign(d.id)}
+                                  className="p-1 text-red-600 hover:bg-red-50 rounded-lg"
+                                  title="डिलीट करें"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <h4 className="text-xs font-bold text-[#2C1810] truncate" title={d.nameHi}>
+                              {d.nameHi}
+                            </h4>
+                            
+                            <div className="flex items-center justify-between pt-0.5">
+                              <span className="text-xs font-mono font-bold text-[#80182A]">
+                                {d.price ? `₹${d.price}` : 'संपर्क पर'}
+                              </span>
+                              
+                              {/* Custom Price Modal Trigger */}
+                              <button
+                                onClick={() => {
+                                  setQuickPriceModalDesign(d);
+                                  setQuickPriceValue(d.price ? String(d.price) : '350');
+                                }}
+                                className="px-1.5 py-0.5 bg-[#FAF1E3] hover:bg-[#F2E8D5] text-[#80182A] rounded text-[10px] font-semibold flex items-center gap-1 border border-[#DFC99D]"
+                                title="कस्टम कीमत दर्ज करें"
+                              >
+                                <Tag className="w-3 h-3 text-[#B38F2B]" />
+                                <span>कस्टम कीमत</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-1 shrink-0">
-                          <button
-                            onClick={() => {
-                              setIsCreatingNewDesign(false);
-                              setEditingDesign(d);
-                            }}
-                            className="p-1.5 text-[#5A4A42] hover:text-[#80182A] hover:bg-[#FAF6EE] rounded-lg"
-                            title="एडिट करें"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteDesign(d.id)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
-                            title="डिलीट करें"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+
+                        {/* 1-Click Fast Price Selector Pills (₹200 to ₹400) */}
+                        <div className="pt-2 border-t border-[#F2ECE1] space-y-1">
+                          <span className="text-[9px] text-[#705E54] font-medium block">
+                            1-क्लिक कीमत बदलें (₹200 - ₹400):
+                          </span>
+                          <div className="grid grid-cols-6 gap-1">
+                            {[200, 250, 300, 350, 399, 400].map((pr) => (
+                              <button
+                                key={pr}
+                                type="button"
+                                onClick={() => handleQuickInlinePrice(d, pr)}
+                                className={`py-1 text-[10px] font-mono font-bold rounded-md border text-center transition-all ${
+                                  d.price === pr
+                                    ? 'bg-[#80182A] text-white border-[#80182A] shadow-xs'
+                                    : 'bg-[#FAF6EE] hover:bg-[#F2E8D5] text-[#4A0A19] border-[#E0D4BA]'
+                                }`}
+                                title={`कीमत ₹${pr} सेट करें`}
+                              >
+                                ₹{pr}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* QUICK PRICE EDIT MODAL */}
+                  {quickPriceModalDesign && (
+                    <div className="fixed inset-0 z-70 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4">
+                      <div className="bg-[#FDFBF7] rounded-3xl max-w-sm w-full p-5 shadow-2xl border-2 border-[#D4AF37] space-y-4">
+                        <div className="flex items-center justify-between pb-2 border-b border-[#F2ECE1]">
+                          <div className="flex items-center gap-1.5">
+                            <Tag className="w-4 h-4 text-[#80182A]" />
+                            <h4 className="font-serif font-bold text-sm text-[#4A0A19]">
+                              कीमत बदलें (Change Price)
+                            </h4>
+                          </div>
+                          <button
+                            onClick={() => setQuickPriceModalDesign(null)}
+                            className="text-[#705E54] hover:text-[#4A0A19]"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <div>
+                          <span className="text-[11px] font-bold text-[#80182A]">
+                            {quickPriceModalDesign.code}
+                          </span>
+                          <h5 className="text-xs font-semibold text-[#2C1810]">
+                            {quickPriceModalDesign.nameHi}
+                          </h5>
+                        </div>
+
+                        <form onSubmit={handleQuickPriceSave} className="space-y-3 text-xs">
+                          <div>
+                            <label className="block font-semibold mb-1">
+                              नई कीमत (₹200 से ₹400 या कोई भी राशि):
+                            </label>
+                            <input
+                              type="number"
+                              min={100}
+                              max={2000}
+                              value={quickPriceValue}
+                              onChange={(e) => setQuickPriceValue(e.target.value)}
+                              placeholder="जैसे: 350"
+                              className="w-full p-2.5 border rounded-xl font-mono text-base font-bold bg-white focus:border-[#80182A] outline-none"
+                              autoFocus
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[11px] text-[#705E54]">त्वरित चयन (₹200 - ₹400):</span>
+                            <div className="grid grid-cols-6 gap-1">
+                              {[200, 250, 300, 350, 399, 400].map((val) => (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => setQuickPriceValue(String(val))}
+                                  className={`py-1 rounded-lg text-xs font-mono font-bold border transition-colors ${
+                                    quickPriceValue === String(val)
+                                      ? 'bg-[#80182A] text-white border-[#80182A]'
+                                      : 'bg-white text-[#4A0A19] border-[#DFC99D] hover:bg-[#FAF1E3]'
+                                  }`}
+                                >
+                                  ₹{val}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-2 border-t border-[#F2ECE1]">
+                            <button
+                              type="button"
+                              onClick={() => setQuickPriceModalDesign(null)}
+                              className="px-3 py-1.5 border rounded-lg"
+                            >
+                              रद्द करें
+                            </button>
+                            <button
+                              type="submit"
+                              className="px-5 py-1.5 bg-[#80182A] hover:bg-[#9B111E] text-white font-semibold rounded-lg shadow-xs"
+                            >
+                              कीमत सेव करें
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               )}
 
               {/* TAB 3: SETTINGS & BANNER MANAGER */}
               {activeTab === 'settings' && (
-                <div className="bg-white p-6 rounded-2xl border border-[#E8DFC8] space-y-6 max-w-2xl">
-                  <h3 className="font-serif font-bold text-base text-[#4A0A19]">
-                    वेबसाइट घोषणाएं एवं उत्सव बैनर प्रबंधन
-                  </h3>
+                <div className="space-y-6 max-w-2xl">
+                  {/* Banner & Notice Card */}
+                  <div className="bg-white p-6 rounded-2xl border border-[#E8DFC8] space-y-4">
+                    <h3 className="font-serif font-bold text-base text-[#4A0A19]">
+                      वेबसाइट घोषणाएं एवं उत्सव बैनर प्रबंधन
+                    </h3>
 
-                  <div className="space-y-4 text-xs">
-                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-[#4A0A19]">
-                      <input
-                        type="checkbox"
-                        checked={navratriBannerActive}
-                        onChange={(e) => setNavratriBannerActive(e.target.checked)}
-                        className="rounded text-[#80182A]"
-                      />
-                      <span>नवरात्रि 2026 स्पेशल फेस्टिव बैनर दिखाएं (Show Navratri 2026 Banner)</span>
-                    </label>
+                    <div className="space-y-4 text-xs">
+                      <label className="flex items-center gap-2 cursor-pointer font-semibold text-[#4A0A19]">
+                        <input
+                          type="checkbox"
+                          checked={navratriBannerActive}
+                          onChange={(e) => setNavratriBannerActive(e.target.checked)}
+                          className="rounded text-[#80182A]"
+                        />
+                        <span>नवरात्रि 2026 स्पेशल फेस्टिव बैनर दिखाएं (Show Navratri 2026 Banner)</span>
+                      </label>
 
-                    <div>
-                      <label className="block font-semibold mb-1">अनाउंसमेंट नोटिस (हिंदी)</label>
-                      <input
-                        type="text"
-                        value={noticeHindi}
-                        onChange={(e) => setNoticeHindi(e.target.value)}
-                        className="w-full p-2.5 border rounded-xl"
-                      />
+                      <div>
+                        <label className="block font-semibold mb-1">अनाउंसमेंट नोटिस (हिंदी)</label>
+                        <input
+                          type="text"
+                          value={noticeHindi}
+                          onChange={(e) => setNoticeHindi(e.target.value)}
+                          className="w-full p-2.5 border rounded-xl"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold mb-1">Announcement Notice (English)</label>
+                        <input
+                          type="text"
+                          value={noticeEnglish}
+                          onChange={(e) => setNoticeEnglish(e.target.value)}
+                          className="w-full p-2.5 border rounded-xl"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cloudinary Integration Settings Card */}
+                  <div className="bg-gradient-to-br from-[#FFFDF9] to-[#FAF4E8] p-6 rounded-2xl border-2 border-[#D4AF37] space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between pb-3 border-b border-[#EADBBE]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 bg-[#80182A] text-white rounded-xl shadow-xs">
+                          <Cloud className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-serif font-bold text-base text-[#4A0A19]">
+                            Cloudinary इमेज होस्टिंग इंटीग्रेशन
+                          </h4>
+                          <span className="text-[11px] text-[#705E54]">
+                            ब्लाउज़ कैटलॉग व कस्टमर रेफरेंस फोटो स्टोरेज
+                          </span>
+                        </div>
+                      </div>
+
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        सक्रिय (Connected)
+                      </span>
                     </div>
 
-                    <div>
-                      <label className="block font-semibold mb-1">Announcement Notice (English)</label>
-                      <input
-                        type="text"
-                        value={noticeEnglish}
-                        onChange={(e) => setNoticeEnglish(e.target.value)}
-                        className="w-full p-2.5 border rounded-xl"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block font-semibold text-[#4A0A19] mb-1">
+                          Cloud Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={cloudinaryCloudName}
+                          onChange={(e) => setCloudinaryCloudName(e.target.value)}
+                          placeholder="dxeuzdwkz"
+                          className="w-full p-2.5 bg-white border border-[#D9CEB5] rounded-xl font-mono text-xs outline-none focus:border-[#80182A]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-[#4A0A19] mb-1">
+                          Upload Preset Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={cloudinaryUploadPreset}
+                          onChange={(e) => setCloudinaryUploadPreset(e.target.value)}
+                          placeholder="Muskaan fashion designer"
+                          className="w-full p-2.5 bg-white border border-[#D9CEB5] rounded-xl text-xs outline-none focus:border-[#80182A]"
+                        />
+                      </div>
                     </div>
+
+                    {/* Test Connection Button & Result */}
+                    <div className="p-3 bg-white rounded-xl border border-[#DFC99D] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                      <div className="space-y-0.5">
+                        <span className="font-semibold text-[#4A0A19] block">
+                          कनेक्शन जांचें (Test Cloudinary API)
+                        </span>
+                        <span className="text-[11px] text-[#705E54]">
+                          जांचें कि Cloudinary में फोटो अपलोड सही ढंग से काम कर रहा है
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleTestCloudinary}
+                        disabled={cloudinaryTestResult?.testing}
+                        className="px-3.5 py-1.5 bg-[#FAF1E3] hover:bg-[#F2E8D5] text-[#80182A] border border-[#DFC99D] rounded-xl font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${cloudinaryTestResult?.testing ? 'animate-spin' : ''}`} />
+                        <span>{cloudinaryTestResult?.testing ? 'जांच हो रही है...' : 'टेस्ट कनेक्शन'}</span>
+                      </button>
+                    </div>
+
+                    {cloudinaryTestResult && (
+                      <div
+                        className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
+                          cloudinaryTestResult.isError
+                            ? 'bg-red-50 border-red-200 text-red-700'
+                            : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                        }`}
+                      >
+                        {cloudinaryTestResult.isError ? '✕ ' : '✓ '}
+                        <div className="space-y-1">
+                          <span>{cloudinaryTestResult.message}</span>
+                          {cloudinaryTestResult.sampleUrl && (
+                            <a
+                              href={cloudinaryTestResult.sampleUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[11px] text-emerald-700 underline flex items-center gap-1 font-mono"
+                            >
+                              <span>टेस्ट इमेज लिंक देखें</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {saveSuccessMsg && (
                       <div className="text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
@@ -1258,12 +2042,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       </div>
                     )}
 
-                    <button
-                      onClick={handleSaveSettings}
-                      className="px-5 py-2.5 bg-[#80182A] text-white font-semibold rounded-xl hover:bg-[#9B111E]"
-                    >
-                      सेटिंग्स सेव करें
-                    </button>
+                    <div className="pt-2">
+                      <button
+                        onClick={handleSaveSettings}
+                        className="px-6 py-2.5 bg-[#80182A] text-white font-semibold rounded-xl hover:bg-[#9B111E] shadow-sm transition-colors text-xs"
+                      >
+                        सेटिंग्स व Cloudinary सेव करें
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
