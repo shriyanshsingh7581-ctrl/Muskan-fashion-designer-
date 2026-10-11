@@ -63,6 +63,33 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [deliveryNote, setDeliveryNote] = useState<string>('');
   const [adminNote, setAdminNote] = useState<string>('');
 
+  // Manual Order Creation State (Admin can place orders)
+  const [isCreatingNewOrder, setIsCreatingNewOrder] = useState(false);
+  const [newOrderCustomerName, setNewOrderCustomerName] = useState('');
+  const [newOrderMobile, setNewOrderMobile] = useState('');
+  const [newOrderWhatsapp, setNewOrderWhatsapp] = useState('');
+  const [newOrderDesignId, setNewOrderDesignId] = useState('');
+  const [newOrderColor, setNewOrderColor] = useState('शाही मैरून');
+  const [newOrderFabric, setNewOrderFabric] = useState(FABRIC_OPTIONS[0].nameHi);
+  const [newOrderSleeve, setNewOrderSleeve] = useState(SLEEVE_STYLES[2].nameHi);
+  const [newOrderNeck, setNewOrderNeck] = useState(NECK_DESIGNS[0].nameHi);
+  const [newOrderQuantity, setNewOrderQuantity] = useState(1);
+  const [newOrderSizeType, setNewOrderSizeType] = useState<'standard' | 'custom'>('standard');
+  const [newOrderStandardSize, setNewOrderStandardSize] = useState('36');
+  const [newOrderBust, setNewOrderBust] = useState('');
+  const [newOrderUnderbust, setNewOrderUnderbust] = useState('');
+  const [newOrderWaist, setNewOrderWaist] = useState('');
+  const [newOrderShoulder, setNewOrderShoulder] = useState('');
+  const [newOrderLength, setNewOrderLength] = useState('');
+  const [newOrderSleeveLength, setNewOrderSleeveLength] = useState('');
+  const [newOrderArmhole, setNewOrderArmhole] = useState('');
+  const [newOrderAddress, setNewOrderAddress] = useState('');
+  const [newOrderCity, setNewOrderCity] = useState('');
+  const [newOrderPin, setNewOrderPin] = useState('');
+  const [newOrderAmount, setNewOrderAmount] = useState('');
+  const [newOrderStatus, setNewOrderStatus] = useState<OrderStatus>('Order Confirmed');
+  const [newOrderNotes, setNewOrderNotes] = useState('');
+
   // Designs State
   const [designs, setDesigns] = useState<BlouseDesign[]>([]);
   const [editingDesign, setEditingDesign] = useState<Partial<BlouseDesign> | null>(null);
@@ -232,6 +259,83 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Direct Order Creation by Admin
+  const handleAdminCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOrderCustomerName.trim()) {
+      alert('कृपया ग्राहक का नाम भरें');
+      return;
+    }
+    const cleanMobile = newOrderMobile.replace(/\D/g, '');
+    if (cleanMobile.length < 10) {
+      alert('कृपया 10 अंकों का वैध मोबाइल नंबर भरें');
+      return;
+    }
+
+    const chosenDesign =
+      designs.find((d) => d.id === newOrderDesignId) || designs[0] || ({ id: 'mfd-custom', code: 'MFD-CUSTOM', nameHi: 'कस्टम ब्लाउज़', price: 350, image: '/src/assets/images/hero_blouse_craft_1791701468425.jpg' } as any);
+
+    const calcTotal = newOrderAmount
+      ? Number(newOrderAmount)
+      : (chosenDesign.price || 350) * (Number(newOrderQuantity) || 1);
+
+    const payload: Partial<Order> = {
+      customerName: newOrderCustomerName.trim(),
+      mobileNumber: newOrderMobile.trim(),
+      whatsappNumber: newOrderWhatsapp.trim() || newOrderMobile.trim(),
+      designId: chosenDesign.id,
+      designCode: chosenDesign.code,
+      designName: chosenDesign.nameHi,
+      designImage: chosenDesign.image,
+      blouseColor: newOrderColor,
+      fabricPreference: newOrderFabric,
+      sleeveStyle: newOrderSleeve,
+      neckDesign: newOrderNeck,
+      quantity: Number(newOrderQuantity) || 1,
+      sizeType: newOrderSizeType,
+      standardSize: newOrderSizeType === 'standard' ? newOrderStandardSize : undefined,
+      measurements:
+        newOrderSizeType === 'custom'
+          ? {
+              bust: newOrderBust,
+              underbust: newOrderUnderbust,
+              waist: newOrderWaist,
+              shoulder: newOrderShoulder,
+              blouseLength: newOrderLength,
+              sleeveLength: newOrderSleeveLength,
+              armhole: newOrderArmhole,
+            }
+          : undefined,
+      deliveryAddress: newOrderAddress.trim() || 'दुकान से पिकअप (Boutique Pickup)',
+      city: newOrderCity.trim() || 'इंदौर',
+      pinCode: newOrderPin.trim() || '452001',
+      totalAmount: calcTotal,
+      pricePerItem: chosenDesign.price || 350,
+      status: newOrderStatus,
+      adminNotes: newOrderNotes.trim() || 'बुटीक एडमिन द्वारा सीधे दर्ज किया गया ऑर्डर',
+    };
+
+    try {
+      const saved = await api.createOrder(payload);
+      setOrders((prev) => [saved, ...prev]);
+      setIsCreatingNewOrder(false);
+      setSaveSuccessMsg(`ऑर्डर ${saved.id} सफलतापूर्वक दर्ज किया गया!`);
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+
+      // Reset
+      setNewOrderCustomerName('');
+      setNewOrderMobile('');
+      setNewOrderWhatsapp('');
+      setNewOrderAddress('');
+      setNewOrderAmount('');
+      setNewOrderNotes('');
+      setNewOrderBust('');
+      setNewOrderWaist('');
+    } catch (err: any) {
+      alert('ऑर्डर दर्ज करने में समस्या: ' + err.message);
+    }
   };
 
   // Save Design (New or Edit)
@@ -457,7 +561,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       />
                     </div>
 
-                    <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto scrollbar-none">
+                    <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto scrollbar-none">
                       <span className="text-xs text-[#705E54] shrink-0">स्थिति:</span>
                       <select
                         value={statusFilter}
@@ -471,8 +575,332 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                           </option>
                         ))}
                       </select>
+
+                      <button
+                        onClick={() => setIsCreatingNewOrder(true)}
+                        className="px-3 py-1.5 bg-[#80182A] hover:bg-[#9B111E] text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-xs whitespace-nowrap transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>+ नया ऑर्डर जोड़ें</span>
+                      </button>
                     </div>
                   </div>
+
+                  {/* Manual Order Creation Form (When Admin clicks New Order) */}
+                  {isCreatingNewOrder && (
+                    <div className="bg-white p-5 sm:p-6 rounded-2xl border-2 border-[#D4AF37] space-y-4 shadow-md">
+                      <div className="flex items-center justify-between pb-3 border-b border-[#F2ECE1]">
+                        <div>
+                          <h4 className="font-serif font-bold text-base text-[#4A0A19]">
+                            नया ग्राहक ऑर्डर दर्ज करें (Create Manual Order)
+                          </h4>
+                          <span className="text-[11px] text-[#705E54]">
+                            दुकान या फोन पर आए ग्राहक का ऑर्डर सीधे डेटाबेस में जोड़ें
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsCreatingNewOrder(false)}
+                          className="text-xs text-[#705E54] hover:text-[#4A0A19]"
+                        >
+                          ✕ बंद करें
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleAdminCreateOrder} className="space-y-4 text-xs">
+                        {/* Row 1: Customer Details */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">ग्राहक का नाम *</label>
+                            <input
+                              type="text"
+                              value={newOrderCustomerName}
+                              onChange={(e) => setNewOrderCustomerName(e.target.value)}
+                              placeholder="जैसे: नीता वर्मा (Neeta Verma)"
+                              className="w-full p-2 border rounded-lg"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">मोबाइल नंबर (10 अंक) *</label>
+                            <input
+                              type="tel"
+                              maxLength={10}
+                              value={newOrderMobile}
+                              onChange={(e) => setNewOrderMobile(e.target.value.replace(/\D/g, ''))}
+                              placeholder="9876543210"
+                              className="w-full p-2 border rounded-lg font-mono"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">WhatsApp नंबर</label>
+                            <input
+                              type="tel"
+                              maxLength={10}
+                              value={newOrderWhatsapp}
+                              onChange={(e) => setNewOrderWhatsapp(e.target.value.replace(/\D/g, ''))}
+                              placeholder="खाली छोड़ें यदि मोबाइल ही है"
+                              className="w-full p-2 border rounded-lg font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Row 2: Design Selection & Sizing */}
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-[#FAF6EE] p-3 rounded-xl border border-[#E8DFC8]">
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">डिज़ाइन चुनें *</label>
+                            <select
+                              value={newOrderDesignId}
+                              onChange={(e) => setNewOrderDesignId(e.target.value)}
+                              className="w-full p-2 border rounded-lg bg-white"
+                            >
+                              <option value="">-- कैटलॉग से चुनें --</option>
+                              {designs.map((d) => (
+                                <option key={d.id} value={d.id}>
+                                  {d.code} - {d.nameHi} (₹{d.price || 350})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">ब्लाउज़ का रंग</label>
+                            <input
+                              type="text"
+                              value={newOrderColor}
+                              onChange={(e) => setNewOrderColor(e.target.value)}
+                              placeholder="जैसे: शाही मैरून / रानी पिंक"
+                              className="w-full p-2 border rounded-lg bg-white"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">कपड़ा (फैब्रिक)</label>
+                            <select
+                              value={newOrderFabric}
+                              onChange={(e) => setNewOrderFabric(e.target.value)}
+                              className="w-full p-2 border rounded-lg bg-white"
+                            >
+                              {FABRIC_OPTIONS.map((fab) => (
+                                <option key={fab.id} value={fab.nameHi}>
+                                  {fab.nameHi}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">संख्या (Qty)</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={20}
+                              value={newOrderQuantity}
+                              onChange={(e) => setNewOrderQuantity(Number(e.target.value))}
+                              className="w-full p-2 border rounded-lg bg-white font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Row 3: Sleeve & Neck & Size Type */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">आस्तीन स्टाइल</label>
+                            <select
+                              value={newOrderSleeve}
+                              onChange={(e) => setNewOrderSleeve(e.target.value)}
+                              className="w-full p-2 border rounded-lg"
+                            >
+                              {SLEEVE_STYLES.map((sl) => (
+                                <option key={sl.id} value={sl.nameHi}>
+                                  {sl.nameHi}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">गले का डिज़ाइन</label>
+                            <select
+                              value={newOrderNeck}
+                              onChange={(e) => setNewOrderNeck(e.target.value)}
+                              className="w-full p-2 border rounded-lg"
+                            >
+                              {NECK_DESIGNS.map((nk) => (
+                                <option key={nk.id} value={nk.nameHi}>
+                                  {nk.nameHi}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">साइज़ प्रकार</label>
+                            <div className="flex items-center gap-2 pt-1">
+                              <label className="flex items-center gap-1 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="sizeTypeAdmin"
+                                  checked={newOrderSizeType === 'standard'}
+                                  onChange={() => setNewOrderSizeType('standard')}
+                                />
+                                <span>स्टैंडर्ड ({newOrderStandardSize}")</span>
+                              </label>
+                              <label className="flex items-center gap-1 cursor-pointer ml-2">
+                                <input
+                                  type="radio"
+                                  name="sizeTypeAdmin"
+                                  checked={newOrderSizeType === 'custom'}
+                                  onChange={() => setNewOrderSizeType('custom')}
+                                />
+                                <span>कस्टम नाप</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Custom Measurements Grid if Custom Selected */}
+                        {newOrderSizeType === 'custom' && (
+                          <div className="p-3 bg-white rounded-xl border border-[#DFC99D] space-y-2">
+                            <span className="font-semibold text-[#80182A] block">कस्टम नाप (Inches):</span>
+                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                              <div>
+                                <label className="block text-[10px]">छाती (Bust)</label>
+                                <input
+                                  type="text"
+                                  value={newOrderBust}
+                                  onChange={(e) => setNewOrderBust(e.target.value)}
+                                  placeholder='36"'
+                                  className="w-full p-1.5 border rounded"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px]">कमर (Waist)</label>
+                                <input
+                                  type="text"
+                                  value={newOrderWaist}
+                                  onChange={(e) => setNewOrderWaist(e.target.value)}
+                                  placeholder='30"'
+                                  className="w-full p-1.5 border rounded"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px]">कंधा (Shoulder)</label>
+                                <input
+                                  type="text"
+                                  value={newOrderShoulder}
+                                  onChange={(e) => setNewOrderShoulder(e.target.value)}
+                                  placeholder='14"'
+                                  className="w-full p-1.5 border rounded"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px]">लंबाई (Length)</label>
+                                <input
+                                  type="text"
+                                  value={newOrderLength}
+                                  onChange={(e) => setNewOrderLength(e.target.value)}
+                                  placeholder='14.5"'
+                                  className="w-full p-1.5 border rounded"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px]">आस्तीन</label>
+                                <input
+                                  type="text"
+                                  value={newOrderSleeveLength}
+                                  onChange={(e) => setNewOrderSleeveLength(e.target.value)}
+                                  placeholder='10"'
+                                  className="w-full p-1.5 border rounded"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px]">आर्महोल</label>
+                                <input
+                                  type="text"
+                                  value={newOrderArmhole}
+                                  onChange={(e) => setNewOrderArmhole(e.target.value)}
+                                  placeholder='16"'
+                                  className="w-full p-1.5 border rounded"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Row 4: Delivery, Price & Status */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">डिलीवरी पता / पिकअप</label>
+                            <input
+                              type="text"
+                              value={newOrderAddress}
+                              onChange={(e) => setNewOrderAddress(e.target.value)}
+                              placeholder="दुकान से पिकअप या पता"
+                              className="w-full p-2 border rounded-lg"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">कुल शुल्क (₹ Amount) *</label>
+                            <input
+                              type="number"
+                              value={newOrderAmount}
+                              onChange={(e) => setNewOrderAmount(e.target.value)}
+                              placeholder="जैसे: 350"
+                              className="w-full p-2 border rounded-lg font-mono font-bold"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block font-semibold text-[#4A0A19] mb-1">प्रारंभिक स्थिति (Status)</label>
+                            <select
+                              value={newOrderStatus}
+                              onChange={(e) => setNewOrderStatus(e.target.value as OrderStatus)}
+                              className="w-full p-2 border rounded-lg font-semibold"
+                            >
+                              {ORDER_STATUS_OPTIONS.map((st) => (
+                                <option key={st} value={st}>
+                                  {st}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block font-semibold text-[#4A0A19] mb-1">बुटीक नोट्स / विशेष निर्देश</label>
+                          <input
+                            type="text"
+                            value={newOrderNotes}
+                            onChange={(e) => setNewOrderNotes(e.target.value)}
+                            placeholder="जैसे: ग्राहक ने फोन पर ऑर्डर दिया, 3 दिन में तैयार करना है..."
+                            className="w-full p-2 border rounded-lg"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-[#F2ECE1]">
+                          <button
+                            type="button"
+                            onClick={() => setIsCreatingNewOrder(false)}
+                            className="px-4 py-2 border rounded-lg text-[#5A4A42] hover:bg-[#FAF6EE]"
+                          >
+                            रद्द करें
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-6 py-2 bg-[#80182A] hover:bg-[#9B111E] text-white font-semibold rounded-lg shadow-xs flex items-center gap-1.5"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            <span>ऑर्डर सेव करें (Create Order)</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
 
                   {/* Orders Table */}
                   <div className="bg-white rounded-2xl border border-[#E8DFC8] overflow-hidden">

@@ -120,6 +120,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>{BUSINESS_PHONE}</span>
           </a>
 
+          {/* Boutique Admin / Backend Portal */}
+          <button
+            onClick={onOpenAdmin}
+            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-[#80182A] bg-[#FAF1E3] hover:bg-[#F2E8D5] border border-[#DFC99D] rounded-full transition-colors whitespace-nowrap"
+            title="बुटीक एडमिन व ऑर्डर मैनेजमेंट पोर्टल"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-[#B38F2B]" />
+            <span>एडमिन पोर्टल</span>
+          </button>
+
           {/* Primary CTA */}
           <button
             onClick={onStartOrder}
