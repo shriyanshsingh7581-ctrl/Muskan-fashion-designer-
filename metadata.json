@@ -1,0 +1,6 @@
+{
+  "name": "MUSKAAN FASHION DESIGNER",
+  "description": "Premium Indian ethnic fashion boutique for custom blouse stitching, bridal collections, festive Navratri designs, measurement customization, and home delivery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
