@@ -661,8 +661,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 बुटीक ओनर लॉगिन (Admin Login)
               </h3>
               <p className="text-xs text-[#5C4D44] mt-1">
-                सुरक्षा के लिए 4-अंकों का एडमिन पिन दर्ज करें (डिफ़ॉल्ट पिन: 9753)
+                सुरक्षा के लिए 4-अंकों का एडमिन पिन दर्ज करें
               </p>
+              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-[#FAF1E3] border border-[#DFC99D] rounded-full text-xs text-[#80182A]">
+                <span>डिफ़ॉल्ट पिन: <strong>9753</strong></span>
+                <button
+                  type="button"
+                  onClick={() => setPinInput('9753')}
+                  className="ml-1 text-[11px] underline font-semibold text-[#B38F2B] hover:text-[#80182A]"
+                >
+                  (यहाँ क्लिक करके भरें)
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
@@ -687,6 +697,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 लॉगिन करें (Unlock Dashboard)
               </button>
             </form>
+
+            <div className="pt-3 border-t border-[#EADBBE] text-[11px] text-[#7A6A60] space-y-1">
+              <div className="font-semibold text-[#4A0A19]">एडमिन पोर्टल डायरेक्ट URL:</div>
+              <code className="inline-block px-2.5 py-1 bg-white border border-[#D9CEB5] rounded-md font-mono text-[11px] text-[#80182A]">
+                {typeof window !== 'undefined' ? `${window.location.origin}/#admin` : '/#admin'}
+              </code>
+            </div>
           </div>
         ) : (
           /* Authenticated Dashboard */

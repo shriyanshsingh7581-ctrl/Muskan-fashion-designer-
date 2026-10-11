@@ -41,6 +41,40 @@ export default function App() {
   const [policiesOpen, setPoliciesOpen] = useState(false);
   const [policiesTab, setPoliciesTab] = useState<'shipping' | 'returns' | 'privacy' | 'terms'>('shipping');
 
+  // Sync Admin panel with URL (/admin, #admin, ?admin=true)
+  useEffect(() => {
+    const checkAdminUrl = () => {
+      const isPathAdmin = window.location.pathname.toLowerCase().endsWith('/admin');
+      const isHashAdmin = window.location.hash.toLowerCase() === '#admin';
+      const isQueryAdmin = new URLSearchParams(window.location.search).get('admin') === 'true';
+      if (isPathAdmin || isHashAdmin || isQueryAdmin) {
+        setAdminOpen(true);
+      }
+    };
+
+    checkAdminUrl();
+    window.addEventListener('popstate', checkAdminUrl);
+    window.addEventListener('hashchange', checkAdminUrl);
+    return () => {
+      window.removeEventListener('popstate', checkAdminUrl);
+      window.removeEventListener('hashchange', checkAdminUrl);
+    };
+  }, []);
+
+  const handleOpenAdmin = () => {
+    setAdminOpen(true);
+    if (window.location.hash !== '#admin' && !window.location.pathname.endsWith('/admin')) {
+      window.history.pushState(null, '', '#admin');
+    }
+  };
+
+  const handleCloseAdmin = () => {
+    setAdminOpen(false);
+    if (window.location.hash === '#admin') {
+      window.history.pushState(null, '', window.location.pathname.endsWith('/admin') ? '/' : window.location.pathname);
+    }
+  };
+
   // Load initial designs & settings
   const loadData = async () => {
     try {
@@ -110,7 +144,7 @@ export default function App() {
         language={language}
         setLanguage={setLanguage}
         onNavigate={handleNavigate}
-        onOpenAdmin={() => setAdminOpen(true)}
+        onOpenAdmin={handleOpenAdmin}
         onStartOrder={handleStartGeneralOrder}
       />
 
@@ -164,7 +198,7 @@ export default function App() {
         language={language}
         onNavigate={handleNavigate}
         onOpenPolicies={handleOpenPolicies}
-        onOpenAdmin={() => setAdminOpen(true)}
+        onOpenAdmin={handleOpenAdmin}
       />
 
       {/* MODALS */}
@@ -207,7 +241,7 @@ export default function App() {
       {/* 4. Boutique Admin Dashboard */}
       {adminOpen && (
         <AdminDashboardModal
-          onClose={() => setAdminOpen(false)}
+          onClose={handleCloseAdmin}
           onDesignsUpdated={loadData}
         />
       )}
