@@ -585,7 +585,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                           nameHi: '',
                           nameEn: '',
                           categoryId: 'designer',
-                          price: 1800,
+                          price: 350,
                           image: '/src/assets/images/hero_blouse_craft_1791701468425.jpg',
                           descriptionHi: '',
                           descriptionEn: '',
