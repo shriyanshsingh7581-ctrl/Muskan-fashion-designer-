@@ -31,18 +31,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-[#FDFBF7]/95 backdrop-blur-md border-b border-[#E8DFC8]">
       {/* Top 3-Zone Contract Navigation */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-15 sm:h-18 flex items-center justify-between gap-2 sm:gap-8">
         
         {/* Zone 1: Single Wordmark Brand */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             onClick={() => handleNavClick('home')}
             className="text-left group focus:outline-none"
           >
-            <span className="block font-serif text-lg sm:text-xl font-bold tracking-wider text-[#6B1124] group-hover:text-[#9B111E] transition-colors whitespace-nowrap">
-              MUSKAAN FASHION DESIGNER
+            <span className="block font-serif text-sm sm:text-lg lg:text-xl font-bold tracking-wider text-[#6B1124] group-hover:text-[#9B111E] transition-colors whitespace-nowrap">
+              MUSKAAN FASHION
             </span>
-            <span className="block text-[10px] tracking-widest text-[#B38F2B] font-medium uppercase whitespace-nowrap">
+            <span className="block text-[9px] sm:text-[10px] tracking-widest text-[#B38F2B] font-medium uppercase whitespace-nowrap">
               {t.brandSubtitle}
             </span>
           </button>
@@ -83,12 +83,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Zone 3: Primary Action + Language Toggle */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Language Switcher */}
-          <div className="flex items-center bg-[#F3EDE0] p-1 rounded-full border border-[#D9CEB5]">
+          <div className="flex items-center bg-[#F3EDE0] p-0.5 sm:p-1 rounded-full border border-[#D9CEB5]">
             <button
               onClick={() => setLanguage('hi')}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+              className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
                 language === 'hi'
                   ? 'bg-[#6B1124] text-white shadow-xs'
                   : 'text-[#6B1124] hover:text-[#9B111E]'
@@ -98,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => setLanguage('en')}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+              className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
                 language === 'en'
                   ? 'bg-[#6B1124] text-white shadow-xs'
                   : 'text-[#6B1124] hover:text-[#9B111E]'
@@ -107,6 +107,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               EN
             </button>
           </div>
+
+          {/* Quick Call on mobile */}
+          <a
+            href={`tel:${BUSINESS_PHONE.replace(/\s+/g, '')}`}
+            className="lg:hidden p-2 text-[#80182A] bg-[#FAF1E3] hover:bg-[#F2E8D5] border border-[#DFC99D] rounded-full transition-colors"
+            title="कॉल करें"
+          >
+            <Phone className="w-3.5 h-3.5 text-[#B38F2B]" />
+          </a>
 
           {/* WhatsApp Direct Inquiry */}
           <a
@@ -133,7 +142,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Primary CTA */}
           <button
             onClick={onStartOrder}
-            className="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-[#80182A] to-[#6B1124] hover:from-[#9B111E] hover:to-[#80182A] rounded-full shadow-xs hover:shadow-sm transition-all whitespace-nowrap shrink-0 border border-[#A62B3F]"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-[#80182A] to-[#6B1124] hover:from-[#9B111E] hover:to-[#80182A] rounded-full shadow-xs hover:shadow-sm transition-all whitespace-nowrap shrink-0 border border-[#A62B3F] active:scale-95"
           >
             {t.nav.orderNow}
           </button>
@@ -141,10 +150,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-[#6B1124] hover:bg-[#F3EDE0] rounded-lg transition-colors"
+            className="lg:hidden p-1.5 text-[#6B1124] hover:bg-[#F3EDE0] rounded-lg transition-colors"
             aria-label="Toggle Navigation"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>

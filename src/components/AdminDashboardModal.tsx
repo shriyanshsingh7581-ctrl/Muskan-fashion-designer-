@@ -624,29 +624,34 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-6 animate-in fade-in duration-200">
-      <div className="relative bg-[#FDFBF7] rounded-3xl max-w-6xl w-full overflow-hidden shadow-2xl border border-[#D4AF37]/50 flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-200">
+      <div className="relative bg-[#FDFBF7] rounded-t-3xl sm:rounded-3xl max-w-6xl w-full overflow-hidden shadow-2xl border-t sm:border border-[#D4AF37]/50 flex flex-col max-h-[96vh] sm:max-h-[94vh]">
         
         {/* Top Header */}
-        <div className="bg-gradient-to-r from-[#6B1124] to-[#4A0A19] text-white p-4 sm:p-5 flex items-center justify-between border-b border-[#D4AF37]/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <Lock className="w-5 h-5 text-[#ECC86B]" />
-            <div>
-              <h2 className="text-base sm:text-lg font-serif font-bold text-white">
-                मुस्कान फैशन डिज़ाइनर – एडमिन डैशबोर्ड
-              </h2>
-              <span className="text-[10px] tracking-wider text-[#F3E5AB]">
-                सुरक्षित बुटीक प्रबंधन पैनल
-              </span>
-            </div>
-          </div>
+        <div className="bg-gradient-to-r from-[#6B1124] to-[#4A0A19] text-white px-4 pt-3 pb-4 sm:p-5 flex flex-col border-b border-[#D4AF37]/40 shrink-0">
+          {/* Mobile Pull Indicator */}
+          <div className="w-10 h-1 bg-white/40 rounded-full mx-auto mb-2.5 sm:hidden" />
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/10 text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-[#ECC86B] shrink-0" />
+              <div>
+                <h2 className="text-sm sm:text-lg font-serif font-bold text-white">
+                  मुस्कान फैशन डिज़ाइनर – एडमिन डैशबोर्ड
+                </h2>
+                <span className="text-[10px] tracking-wider text-[#F3E5AB]">
+                  सुरक्षित बुटीक प्रबंधन पैनल
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full hover:bg-white/10 text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Auth Screen if not authenticated */}
@@ -710,13 +715,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <div className="flex-1 flex flex-col overflow-hidden">
             
             {/* Sub-nav Tabs & Actions Bar */}
-            <div className="bg-[#FAF3E8] border-b border-[#EADBBE] px-4 py-2 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="bg-[#FAF3E8] border-b border-[#EADBBE] px-3 sm:px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto shrink-0">
               
               {/* Tab Selector */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => setActiveTab('orders')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                     activeTab === 'orders'
                       ? 'bg-[#80182A] text-white shadow-xs'
                       : 'text-[#5A4A42] hover:bg-[#EADBBE]'
@@ -726,7 +731,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveTab('designs')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                     activeTab === 'designs'
                       ? 'bg-[#80182A] text-white shadow-xs'
                       : 'text-[#5A4A42] hover:bg-[#EADBBE]'
@@ -736,13 +741,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveTab('settings')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                     activeTab === 'settings'
                       ? 'bg-[#80182A] text-white shadow-xs'
                       : 'text-[#5A4A42] hover:bg-[#EADBBE]'
                   }`}
                 >
-                  ⚙️ बैनर व सेटिंग्स
+                  ⚙️ सेटिंग्स
                 </button>
               </div>
 

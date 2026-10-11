@@ -239,48 +239,49 @@ export const CustomizationOrderFlow: React.FC<CustomizationOrderFlowProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
-      <div className="relative bg-[#FDFBF7] rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border border-[#D4AF37]/40 flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/65 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+      <div className="relative bg-[#FDFBF7] rounded-t-3xl sm:rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border-t sm:border border-[#D4AF37]/40 flex flex-col max-h-[92vh] sm:max-h-[90vh]">
         
         {/* Header with Title and Step Progression */}
-        <div className="bg-gradient-to-r from-[#6B1124] to-[#4A0A19] text-white p-4 sm:p-5 flex items-center justify-between border-b border-[#D4AF37]/50">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#F3E5AB]">
-              <Sparkles className="w-3.5 h-3.5 text-[#ECC86B]" />
-              <span>MUSKAAN FASHION DESIGNER</span>
+        <div className="bg-gradient-to-r from-[#6B1124] to-[#4A0A19] text-white px-4 pt-3 pb-4 sm:p-5 flex flex-col border-b border-[#D4AF37]/50 shrink-0">
+          {/* Mobile Pull Indicator */}
+          <div className="w-10 h-1 bg-white/40 rounded-full mx-auto mb-2.5 sm:hidden" />
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#F3E5AB]">
+                <Sparkles className="w-3.5 h-3.5 text-[#ECC86B]" />
+                <span>MUSKAAN FASHION DESIGNER</span>
+              </div>
+              <h2 className="text-base sm:text-xl font-serif font-bold text-white mt-0.5">
+                {step === 5 ? t.confirmation.successTitle : t.customization.title}
+              </h2>
             </div>
-            <h2 className="text-base sm:text-xl font-serif font-bold text-white mt-0.5">
-              {step === 5 ? t.confirmation.successTitle : t.customization.title}
-            </h2>
-          </div>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/10 text-[#FDFBF7] transition-colors"
-            aria-label="Close"
-          >
-            ✕
-          </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full hover:bg-white/10 text-[#FDFBF7] transition-colors"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Step Indicator (Steps 1 to 4) */}
         {step < 5 && (
-          <div className="bg-[#FAF3E8] border-b border-[#EADBBE] px-4 py-2.5 flex items-center justify-between text-xs font-medium text-[#5A4A42] overflow-x-auto">
-            <span className={step === 1 ? 'font-bold text-[#80182A] underline' : ''}>
-              {t.customization.step1}
-            </span>
-            <span className="text-[#C8B896]">→</span>
-            <span className={step === 2 ? 'font-bold text-[#80182A] underline' : ''}>
-              {t.customization.step2}
-            </span>
-            <span className="text-[#C8B896]">→</span>
-            <span className={step === 3 ? 'font-bold text-[#80182A] underline' : ''}>
-              {t.customization.step3}
-            </span>
-            <span className="text-[#C8B896]">→</span>
-            <span className={step === 4 ? 'font-bold text-[#80182A] underline' : ''}>
-              {t.customization.step4}
-            </span>
+          <div className="bg-[#FAF3E8] border-b border-[#EADBBE] px-4 py-2.5 flex items-center justify-between gap-3 text-xs font-medium text-[#5A4A42] shrink-0">
+            <div className="flex items-center gap-2 w-full">
+              <div className="flex-1 bg-[#E8DFC8] h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-[#80182A] h-full transition-all duration-300 rounded-full"
+                  style={{ width: `${(step / 4) * 100}%` }}
+                />
+              </div>
+              <span className="text-[11px] font-bold text-[#80182A] shrink-0">
+                स्टेप {step}/4: {step === 1 ? 'डिज़ाइन' : step === 2 ? 'नाप व फ़ैब्रिक' : step === 3 ? 'डिलीवरी' : 'पुष्टि'}
+              </span>
+            </div>
           </div>
         )}
 

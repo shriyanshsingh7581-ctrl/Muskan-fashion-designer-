@@ -23,6 +23,7 @@ import { MeasurementGuideModal } from './components/MeasurementGuideModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { PoliciesModal } from './components/PoliciesModal';
 import { Footer } from './components/Footer';
+import { MobileBottomNav } from './components/MobileBottomNav';
 
 import { MessageCircle } from 'lucide-react';
 
@@ -31,6 +32,7 @@ export default function App() {
   const [designs, setDesigns] = useState<BlouseDesign[]>(INITIAL_DESIGNS);
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>('all');
   const [settings, setSettings] = useState<AdminSettings>(DEFAULT_SETTINGS);
+  const [activeSection, setActiveSection] = useState<string>('home');
 
   // Modals & Flows
   const [selectedDesignForModal, setSelectedDesignForModal] = useState<BlouseDesign | null>(null);
@@ -99,6 +101,7 @@ export default function App() {
 
   // Navigation smoothly scrolls to anchor sections
   const handleNavigate = (sectionId: string) => {
+    setActiveSection(sectionId);
     if (sectionId === 'home') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -148,7 +151,7 @@ export default function App() {
         onStartOrder={handleStartGeneralOrder}
       />
 
-      <main className="flex-1">
+      <main className="flex-1 pb-20 lg:pb-0">
         {/* Hero Section */}
         <Hero
           language={language}
@@ -255,20 +258,29 @@ export default function App() {
         />
       )}
 
-      {/* Floating Sticky WhatsApp Button (Adheres to $\le 15\%$ viewport cap) */}
-      <div className="fixed bottom-5 right-5 z-40">
+      {/* Floating Sticky WhatsApp Button - elevated on mobile to avoid overlapping Bottom Nav */}
+      <div className="fixed bottom-20 right-3.5 sm:bottom-6 sm:right-6 z-40">
         <a
           href={generateWhatsAppGeneralUrl()}
           target="_blank"
           rel="noopener noreferrer"
           title="WhatsApp पर तुरंत संपर्क करें"
-          className="group flex items-center gap-2.5 px-4 py-3 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs sm:text-sm rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 border-2 border-white/80"
+          className="group flex items-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-3 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs sm:text-sm rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 border-2 border-white/90"
         >
-          <MessageCircle className="w-5 h-5 text-white animate-pulse" />
+          <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-pulse" />
           <span className="hidden sm:inline">WhatsApp पर ऑर्डर करें</span>
-          <span className="sm:hidden">WhatsApp</span>
+          <span className="sm:hidden text-[11px]">WhatsApp</span>
         </a>
       </div>
+
+      {/* Modern Thumb-Friendly Mobile Bottom Navigation Bar */}
+      <MobileBottomNav
+        language={language}
+        activeSection={activeSection}
+        onNavigate={handleNavigate}
+        onOpenOrder={handleStartGeneralOrder}
+        onOpenAdmin={handleOpenAdmin}
+      />
 
     </div>
   );

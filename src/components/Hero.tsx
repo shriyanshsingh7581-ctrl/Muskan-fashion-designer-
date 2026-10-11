@@ -36,53 +36,55 @@ export const Hero: React.FC<HeroProps> = ({
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-[#4A0A19] leading-[1.2] text-balance">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-bold text-[#4A0A19] leading-[1.25] text-balance">
               {t.hero.headline}
             </h1>
 
             {/* Subheadline */}
-            <p className="text-lg sm:text-xl font-medium text-[#7A1E31] leading-relaxed text-balance">
+            <p className="text-base sm:text-xl font-medium text-[#7A1E31] leading-relaxed text-balance">
               {t.hero.subheadline}
             </p>
 
             {/* Supporting Text */}
-            <p className="text-sm sm:text-base text-[#5C4D44] leading-relaxed max-w-2xl">
+            <p className="text-xs sm:text-base text-[#5C4D44] leading-relaxed max-w-2xl">
               {t.hero.supporting}
             </p>
 
             {/* 3 Main Required CTAs */}
-            <div className="pt-2 flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-4">
               {/* 1. अभी ऑर्डर करें */}
               <button
                 onClick={onStartOrder}
-                className="px-6 py-3.5 text-sm sm:text-base font-semibold text-white bg-gradient-to-r from-[#80182A] via-[#9B111E] to-[#6B1124] hover:from-[#9B111E] hover:to-[#80182A] rounded-full shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 border border-[#B3273D] flex items-center gap-2 whitespace-nowrap"
+                className="w-full sm:w-auto px-6 py-3.5 text-sm sm:text-base font-semibold text-white bg-gradient-to-r from-[#80182A] via-[#9B111E] to-[#6B1124] hover:from-[#9B111E] hover:to-[#80182A] rounded-full shadow-md hover:shadow-lg transition-all active:scale-95 border border-[#B3273D] flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 <Scissors className="w-4 h-4 text-[#F3E5AB]" />
                 <span>{t.hero.ctaOrder}</span>
               </button>
 
-              {/* 2. डिज़ाइन देखें */}
-              <button
-                onClick={onExploreDesigns}
-                className="px-6 py-3.5 text-sm sm:text-base font-semibold text-[#6B1124] bg-white hover:bg-[#FAF5EC] border border-[#DFC99D] rounded-full shadow-xs hover:shadow-sm transition-all whitespace-nowrap"
-              >
-                {t.hero.ctaDesigns}
-              </button>
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3">
+                {/* 2. डिज़ाइन देखें */}
+                <button
+                  onClick={onExploreDesigns}
+                  className="px-4 sm:px-6 py-3 text-xs sm:text-base font-semibold text-[#6B1124] bg-white hover:bg-[#FAF5EC] border border-[#DFC99D] rounded-full shadow-xs hover:shadow-sm transition-all whitespace-nowrap active:scale-95 text-center flex items-center justify-center"
+                >
+                  {t.hero.ctaDesigns}
+                </button>
 
-              {/* 3. WhatsApp पर ऑर्डर करें */}
-              <a
-                href={generateWhatsAppGeneralUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-3.5 text-sm sm:text-base font-semibold text-[#14532D] bg-[#E8F5E9] hover:bg-[#D4EDDA] border border-[#A3D9A5] rounded-full shadow-xs hover:shadow-sm transition-all flex items-center gap-2 whitespace-nowrap"
-              >
-                <MessageCircle className="w-4 h-4 text-[#16A34A]" />
-                <span>{t.hero.ctaWhatsapp}</span>
-              </a>
+                {/* 3. WhatsApp पर ऑर्डर करें */}
+                <a
+                  href={generateWhatsAppGeneralUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 sm:px-6 py-3 text-xs sm:text-base font-semibold text-[#14532D] bg-[#E8F5E9] hover:bg-[#D4EDDA] border border-[#A3D9A5] rounded-full shadow-xs hover:shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95 text-center"
+                >
+                  <MessageCircle className="w-4 h-4 text-[#16A34A] shrink-0" />
+                  <span className="truncate">{t.hero.ctaWhatsapp}</span>
+                </a>
+              </div>
             </div>
 
             {/* Trust Markers Adjacency */}
-            <div className="pt-6 border-t border-[#EEDBCA] grid grid-cols-3 gap-3 text-xs sm:text-sm text-[#5C4D44]">
+            <div className="pt-4 sm:pt-6 border-t border-[#EEDBCA] grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 text-xs sm:text-sm text-[#5C4D44]">
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0" />
                 <span className="font-medium">{t.hero.feature1}</span>

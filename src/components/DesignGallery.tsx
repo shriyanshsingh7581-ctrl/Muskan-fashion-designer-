@@ -118,9 +118,9 @@ export const DesignGallery: React.FC<DesignGalleryProps> = ({
           })}
         </div>
 
-        {/* Gallery Grid */}
+        {/* Gallery Grid: 2 columns on mobile for superior browsing */}
         {filteredDesigns.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             {filteredDesigns.map((design) => (
               <DesignCard
                 key={design.id}
